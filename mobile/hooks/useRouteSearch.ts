@@ -81,6 +81,27 @@ export function useRouteSearch() {
     []
   );
 
+  const fetchByCoords = useCallback(
+    async (
+      startLat: number, startLng: number,
+      endLat: number, endLng: number,
+      startAddr?: string, endAddr?: string
+    ) => {
+      setError(null);
+      setResponse(null);
+      setState('fetching');
+      try {
+        const data = await getDirections(startLat, startLng, endLat, endLng, startAddr, endAddr);
+        setResponse(data);
+        setState('done');
+      } catch {
+        setError('경로 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        setState('error');
+      }
+    },
+    []
+  );
+
   return {
     state,
     response,
@@ -89,6 +110,7 @@ export function useRouteSearch() {
     destCandidates,
     searchCandidates,
     searchRoutes,
+    fetchByCoords,
     isLoading: state === 'geocoding' || state === 'fetching',
   };
 }

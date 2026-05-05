@@ -24,16 +24,20 @@ export default function ResultsScreen() {
     endAddr?: string;
   }>();
 
-  const { state, response, error, searchRoutes, isLoading } = useRouteSearch();
+  const { state, response, error, fetchByCoords, isLoading } = useRouteSearch();
 
   useEffect(() => {
     const { startLat, startLng, endLat, endLng, startAddr, endAddr } = params;
     if (!startLat || !startLng || !endLat || !endLng) return;
 
-    const originText = startAddr || `${startLat},${startLng}`;
-    const destText = endAddr || `${endLat},${endLng}`;
-
-    searchRoutes(originText, destText);
+    fetchByCoords(
+      parseFloat(startLat),
+      parseFloat(startLng),
+      parseFloat(endLat),
+      parseFloat(endLng),
+      startAddr,
+      endAddr
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
