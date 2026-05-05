@@ -83,7 +83,6 @@ export default function SearchScreen() {
       const addr = [geo.city, geo.district || geo.subregion, geo.street].filter(Boolean).join(' ');
       const label = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
       const result: GeocodeResult = { address: label, lat: loc.coords.latitude, lng: loc.coords.longitude };
-
       if (target === 'origin') {
         setOrigin(label);
         setSelectedOrigin(result);
@@ -110,14 +109,8 @@ export default function SearchScreen() {
   }
 
   async function handleSearch() {
-    if (!origin.trim()) {
-      Alert.alert('입력 필요', '출발지를 입력해주세요.');
-      return;
-    }
-    if (!destination.trim()) {
-      Alert.alert('입력 필요', '목적지를 입력해주세요.');
-      return;
-    }
+    if (!origin.trim()) { Alert.alert('입력 필요', '출발지를 입력해주세요.'); return; }
+    if (!destination.trim()) { Alert.alert('입력 필요', '목적지를 입력해주세요.'); return; }
 
     setIsSearching(true);
     try {
@@ -126,31 +119,21 @@ export default function SearchScreen() {
 
       if (!originResult) {
         const results = await geocodeAddress(origin.trim());
-        if (!results.length) {
-          Alert.alert('검색 실패', `출발지 "${origin}"를 찾을 수 없습니다.`);
-          return;
-        }
+        if (!results.length) { Alert.alert('검색 실패', `출발지 "${origin}"를 찾을 수 없습니다.`); return; }
         originResult = results[0];
       }
-
       if (!destResult) {
         const results = await geocodeAddress(destination.trim());
-        if (!results.length) {
-          Alert.alert('검색 실패', `목적지 "${destination}"를 찾을 수 없습니다.`);
-          return;
-        }
+        if (!results.length) { Alert.alert('검색 실패', `목적지 "${destination}"를 찾을 수 없습니다.`); return; }
         destResult = results[0];
       }
 
       router.push({
         pathname: '/results',
         params: {
-          startLat: originResult.lat,
-          startLng: originResult.lng,
-          endLat: destResult.lat,
-          endLng: destResult.lng,
-          startAddr: originResult.address,
-          endAddr: destResult.address,
+          startLat: originResult.lat, startLng: originResult.lng,
+          endLat: destResult.lat, endLng: destResult.lng,
+          startAddr: originResult.address, endAddr: destResult.address,
         },
       });
     } catch {
@@ -162,10 +145,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.inner}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.inner} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Text style={styles.title}>내비 비교</Text>
           <Text style={styles.subtitle}>세 가지 길안내를 한눈에 비교하세요</Text>
@@ -178,8 +158,8 @@ export default function SearchScreen() {
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
-                placeholder="출발지 주소 또는 장소명"
-                placeholderTextColor="#AAAAAA"
+                placeholder="주소 또는 장소명"
+                placeholderTextColor="#94A3B8"
                 value={origin}
                 onChangeText={handleOriginChange}
                 returnKeyType="next"
@@ -189,11 +169,9 @@ export default function SearchScreen() {
                 onPress={() => handleCurrentLocation('origin')}
                 disabled={locatingFor !== null}
               >
-                {locatingFor === 'origin' ? (
-                  <ActivityIndicator size="small" color="#555" />
-                ) : (
-                  <Text style={styles.locationBtnText}>현위치</Text>
-                )}
+                {locatingFor === 'origin'
+                  ? <ActivityIndicator size="small" color="#3B5BDB" />
+                  : <Text style={styles.locationBtnText}>현위치</Text>}
               </TouchableOpacity>
             </View>
             {originCandidates.length > 0 && (
@@ -208,14 +186,10 @@ export default function SearchScreen() {
                       style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]}
                       onPress={() => selectOrigin(item)}
                     >
-                      {item.name ? (
-                        <>
-                          <Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
-                          <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text>
-                        </>
-                      ) : (
-                        <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>
-                      )}
+                      {item.name
+                        ? <><Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
+                            <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text></>
+                        : <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>}
                     </TouchableOpacity>
                   )}
                 />
@@ -238,8 +212,8 @@ export default function SearchScreen() {
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
-                placeholder="목적지 주소 또는 장소명"
-                placeholderTextColor="#AAAAAA"
+                placeholder="주소 또는 장소명"
+                placeholderTextColor="#94A3B8"
                 value={destination}
                 onChangeText={handleDestChange}
                 returnKeyType="search"
@@ -250,11 +224,9 @@ export default function SearchScreen() {
                 onPress={() => handleCurrentLocation('dest')}
                 disabled={locatingFor !== null}
               >
-                {locatingFor === 'dest' ? (
-                  <ActivityIndicator size="small" color="#555" />
-                ) : (
-                  <Text style={styles.locationBtnText}>현위치</Text>
-                )}
+                {locatingFor === 'dest'
+                  ? <ActivityIndicator size="small" color="#3B5BDB" />
+                  : <Text style={styles.locationBtnText}>현위치</Text>}
               </TouchableOpacity>
             </View>
             {destCandidates.length > 0 && (
@@ -269,14 +241,10 @@ export default function SearchScreen() {
                       style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]}
                       onPress={() => selectDest(item)}
                     >
-                      {item.name ? (
-                        <>
-                          <Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
-                          <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text>
-                        </>
-                      ) : (
-                        <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>
-                      )}
+                      {item.name
+                        ? <><Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
+                            <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text></>
+                        : <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>}
                     </TouchableOpacity>
                   )}
                 />
@@ -290,11 +258,9 @@ export default function SearchScreen() {
             activeOpacity={0.85}
             disabled={isSearching}
           >
-            {isSearching ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.searchBtnText}>경로 비교하기</Text>
-            )}
+            {isSearching
+              ? <ActivityIndicator size="small" color="#FFFFFF" />
+              : <Text style={styles.searchBtnText}>경로 비교하기</Text>}
           </TouchableOpacity>
         </View>
 
@@ -307,158 +273,80 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F7F8FA',
-  },
-  inner: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    gap: 32,
-  },
-  header: {
-    gap: 6,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#666666',
-  },
+  container: { flex: 1, backgroundColor: '#F0F4FF' },
+  inner: { flex: 1, paddingHorizontal: 20, paddingTop: 40, gap: 28 },
+  header: { gap: 6 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1E3A8A' },
+  subtitle: { fontSize: 15, color: '#64748B' },
   form: {
     gap: 8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: '#3B5BDB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
-  inputGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#555555',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
+  inputGroup: { gap: 6 },
+  label: { fontSize: 12, fontWeight: '700', color: '#3B5BDB', letterSpacing: 0.5 },
+  inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
     flex: 1,
     height: 48,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
     paddingHorizontal: 14,
     fontSize: 15,
-    color: '#1A1A1A',
-    backgroundColor: '#FAFAFA',
+    color: '#1E293B',
+    backgroundColor: '#F8FAFF',
   },
   locationBtn: {
     height: 48,
     paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
-    backgroundColor: '#FAFAFA',
+    borderWidth: 1.5,
+    borderColor: '#C7D7FD',
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
     minWidth: 64,
   },
-  locationBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333333',
-  },
-  swapRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  swapLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E8E8E8',
-  },
+  locationBtnText: { fontSize: 12, fontWeight: '700', color: '#3B5BDB' },
+  swapRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 },
+  swapLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
   swapBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F0F0F0',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1.5, borderColor: '#C7D7FD',
+    justifyContent: 'center', alignItems: 'center',
     marginHorizontal: 12,
   },
-  swapIcon: {
-    fontSize: 16,
-    color: '#555555',
-  },
+  swapIcon: { fontSize: 16, color: '#3B5BDB' },
   dropdown: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#3B5BDB',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 12,
     elevation: 4,
   },
-  dropdownItem: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  dropdownDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8E8E8',
-  },
-  dropdownText: {
-    fontSize: 14,
-    color: '#1A1A1A',
-  },
-  dropdownName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  dropdownAddr: {
-    fontSize: 12,
-    color: '#888888',
-    marginTop: 2,
-  },
+  dropdownItem: { paddingHorizontal: 14, paddingVertical: 12 },
+  dropdownDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
+  dropdownName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
+  dropdownAddr: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  dropdownText: { fontSize: 14, color: '#1E293B' },
   searchBtn: {
-    height: 52,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
+    height: 52, backgroundColor: '#3B5BDB',
+    borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 8,
   },
-  searchBtnDisabled: {
-    backgroundColor: '#555555',
-  },
-  searchBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  disclaimer: {
-    fontSize: 11,
-    color: '#AAAAAA',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
+  searchBtnDisabled: { backgroundColor: '#93A8F4' },
+  searchBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  disclaimer: { fontSize: 11, color: '#94A3B8', textAlign: 'center', lineHeight: 16 },
 });

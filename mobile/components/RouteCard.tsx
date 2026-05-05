@@ -26,29 +26,26 @@ export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardP
   if (result.status === 'error' || result.status === 'no_route') {
     return (
       <View style={styles.card}>
-        <View style={[styles.header, { backgroundColor: '#F5F5F5' }]}>
-          <View style={[styles.colorBar, { backgroundColor: '#CCCCCC' }]} />
-          <Text style={[styles.appName, { color: '#999999' }]}>{config.name}</Text>
+        <View style={styles.errorHeader}>
+          <View style={[styles.colorBar, { backgroundColor: '#CBD5E1' }]} />
+          <Text style={styles.errorAppName}>{config.name}</Text>
         </View>
         <View style={styles.errorBody}>
           <Text style={styles.errorMsg}>
             {result.status === 'no_route' ? '경로를 찾을 수 없습니다' : '조회에 실패했습니다'}
           </Text>
-          {result.errorMessage && (
-            <Text style={styles.errorDetail}>{result.errorMessage}</Text>
-          )}
+          {result.errorMessage && <Text style={styles.errorDetail}>{result.errorMessage}</Text>}
         </View>
       </View>
     );
   }
 
   const tollLabel = result.toll > 0 ? formatMoney(result.toll) : '무료';
-  const tintColor = config.color + '22';  // 13% 투명도 틴트
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.88}>
-      {/* 헤더: 앱 이름 + 배지 */}
-      <View style={[styles.header, { backgroundColor: tintColor }]}>
+      {/* 헤더 */}
+      <View style={styles.header}>
         <View style={[styles.colorBar, { backgroundColor: config.color }]} />
         <View style={styles.headerContent}>
           <Text style={styles.appName}>{config.name}</Text>
@@ -81,18 +78,14 @@ export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardP
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
-          <Text style={[styles.statValue, result.toll > 0 && styles.tollPaid]}>
-            {tollLabel}
-          </Text>
+          <Text style={[styles.statValue, result.toll > 0 && styles.tollPaid]}>{tollLabel}</Text>
           <Text style={styles.statLabel}>통행료</Text>
         </View>
       </View>
 
-      {/* 길안내 버튼 */}
-      <View style={[styles.launchBtn, { backgroundColor: config.color }]}>
-        <Text style={[styles.launchText, { color: config.onColor }]}>
-          길안내 시작하기 →
-        </Text>
+      {/* 길안내 버튼 — 테마 블루로 통일 */}
+      <View style={styles.launchBtn}>
+        <Text style={styles.launchText}>길안내 시작하기 →</Text>
       </View>
     </TouchableOpacity>
   );
@@ -104,10 +97,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 14,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.09,
-    shadowRadius: 10,
+    shadowColor: '#3B5BDB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
   header: {
@@ -116,6 +109,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingRight: 14,
     gap: 12,
+    backgroundColor: '#F8FAFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2FF',
   },
   colorBar: {
     width: 5,
@@ -123,107 +119,48 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 3,
     borderBottomRightRadius: 3,
   },
-  headerContent: {
-    flex: 1,
-    gap: 2,
-  },
-  appName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  characteristic: {
-    fontSize: 12,
-    color: '#777777',
-  },
-  badges: {
-    gap: 5,
-    alignItems: 'flex-end',
-  },
+  headerContent: { flex: 1, gap: 2 },
+  appName: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
+  characteristic: { fontSize: 12, color: '#64748B' },
+  badges: { gap: 5, alignItems: 'flex-end' },
   fastBadge: {
-    backgroundColor: '#DBEAFE',
-    borderRadius: 20,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    backgroundColor: '#DBEAFE', borderRadius: 20,
+    paddingHorizontal: 9, paddingVertical: 3,
   },
-  fastBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1D4ED8',
-  },
+  fastBadgeText: { fontSize: 11, fontWeight: '700', color: '#1D4ED8' },
   cheapBadge: {
-    backgroundColor: '#D1FAE5',
-    borderRadius: 20,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    backgroundColor: '#D1FAE5', borderRadius: 20,
+    paddingHorizontal: 9, paddingVertical: 3,
   },
-  cheapBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#065F46',
-  },
+  cheapBadgeText: { fontSize: 11, fontWeight: '700', color: '#065F46' },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
   },
-  primaryStat: {
-    flex: 1.2,
-    alignItems: 'center',
-    gap: 3,
-  },
-  primaryValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 3,
-  },
-  statValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  tollPaid: {
-    color: '#DC2626',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  statDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#F0F0F0',
-  },
+  primaryStat: { flex: 1.2, alignItems: 'center', gap: 4 },
+  primaryValue: { fontSize: 24, fontWeight: '800', color: '#1E3A8A' },
+  stat: { flex: 1, alignItems: 'center', gap: 4 },
+  statValue: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
+  tollPaid: { color: '#DC2626' },
+  statLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '500' },
+  statDivider: { width: 1, height: 36, backgroundColor: '#E2E8F0' },
   launchBtn: {
-    marginHorizontal: 14,
-    marginBottom: 14,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
+    marginHorizontal: 14, marginBottom: 14,
+    borderRadius: 12, paddingVertical: 12,
+    alignItems: 'center', backgroundColor: '#3B5BDB',
   },
-  launchText: {
-    fontSize: 14,
-    fontWeight: '700',
+  launchText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  // 에러
+  errorHeader: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 14, gap: 12,
+    backgroundColor: '#F8FAFF',
+    borderBottomWidth: 1, borderBottomColor: '#EEF2FF',
   },
-  // 에러 상태
-  errorBody: {
-    paddingVertical: 20,
-    alignItems: 'center',
-    gap: 4,
-  },
-  errorMsg: {
-    fontSize: 14,
-    color: '#AAAAAA',
-  },
-  errorDetail: {
-    fontSize: 12,
-    color: '#CCCCCC',
-  },
+  errorAppName: { fontSize: 16, fontWeight: '700', color: '#94A3B8' },
+  errorBody: { paddingVertical: 20, alignItems: 'center', gap: 4 },
+  errorMsg: { fontSize: 14, color: '#94A3B8' },
+  errorDetail: { fontSize: 12, color: '#CBD5E1' },
 });
