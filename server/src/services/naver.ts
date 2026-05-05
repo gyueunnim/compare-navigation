@@ -3,7 +3,7 @@ import { Coordinate, RouteResult } from '../types';
 
 export async function getNaverRoute(start: Coordinate, end: Coordinate): Promise<RouteResult> {
   try {
-    const res = await axios.get('https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving', {
+    const res = await axios.get('https://maps.apigw.ntruss.com/map-direction/v1/driving', {
       params: {
         start: `${start.lng},${start.lat}`,
         goal: `${end.lng},${end.lat}`,

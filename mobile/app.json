@@ -33,18 +33,10 @@
     },
     "plugins": [
       "expo-router",
-      "expo-location",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "extraProguardRules": ""
-          }
-        }
-      ]
+      "expo-location"
     ],
     "extra": {
-      "apiUrl": "http://localhost:3000"
+      "apiUrl": "http://172.30.1.60:3000"
     }
   }
 }

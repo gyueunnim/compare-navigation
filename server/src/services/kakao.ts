@@ -11,6 +11,7 @@ export async function getKakaoRoute(start: Coordinate, end: Coordinate): Promise
       },
       headers: {
         Authorization: `KakaoAK ${process.env.KAKAO_MOBILITY_KEY!}`,
+        KA: 'sdk/js-2.4.2 os/web lang/ko-KR origin/http://localhost:3000',
       },
       timeout: 5000,
     });

@@ -120,7 +120,7 @@ export default function SearchScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>목적지</Text>
             <TextInput
-              style={styles.input}
+              style={styles.inputFull}
               placeholder="목적지 주소 입력"
               placeholderTextColor="#AAAAAA"
               value={destination}
@@ -192,6 +192,16 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: '#1A1A1A',
+    backgroundColor: '#FAFAFA',
+  },
+  inputFull: {
     height: 48,
     borderWidth: 1,
     borderColor: '#E0E0E0',
