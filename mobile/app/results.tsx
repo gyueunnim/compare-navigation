@@ -122,15 +122,18 @@ export default function ResultsScreen() {
       const [geo] = await Location.reverseGeocodeAsync(loc.coords);
       const addr = [geo.city, geo.district || geo.subregion, geo.street].filter(Boolean).join(' ');
       const label = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
-      setOriginLabel(label);
-      const next = {
-        ...currentCoords,
-        startLat: loc.coords.latitude,
-        startLng: loc.coords.longitude,
-        startAddr: label,
-      };
-      setCurrentCoords(next);
-      fetchByCoords(loc.coords.latitude, loc.coords.longitude, next.endLat, next.endLng, label, next.endAddr);
+
+      if (editMode === 'origin') {
+        setOriginLabel(label);
+        const next = { ...currentCoords, startLat: loc.coords.latitude, startLng: loc.coords.longitude, startAddr: label };
+        setCurrentCoords(next);
+        fetchByCoords(loc.coords.latitude, loc.coords.longitude, next.endLat, next.endLng, label, next.endAddr);
+      } else {
+        setDestLabel(label);
+        const next = { ...currentCoords, endLat: loc.coords.latitude, endLng: loc.coords.longitude, endAddr: label };
+        setCurrentCoords(next);
+        fetchByCoords(next.startLat, next.startLng, loc.coords.latitude, loc.coords.longitude, next.startAddr, label);
+      }
       setEditMode(null);
     } catch {
       Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
@@ -243,19 +246,17 @@ export default function ResultsScreen() {
               </TouchableOpacity>
             </View>
 
-            {editMode === 'origin' && (
-              <TouchableOpacity
-                style={styles.locationBtn}
-                onPress={handleCurrentLocation}
-                disabled={isLocating}
-              >
-                {isLocating ? (
-                  <ActivityIndicator size="small" color="#555" />
-                ) : (
-                  <Text style={styles.locationBtnText}>📍 현재 위치로 설정</Text>
-                )}
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={styles.locationBtn}
+              onPress={handleCurrentLocation}
+              disabled={isLocating}
+            >
+              {isLocating ? (
+                <ActivityIndicator size="small" color="#555" />
+              ) : (
+                <Text style={styles.locationBtnText}>📍 현재 위치로 설정</Text>
+              )}
+            </TouchableOpacity>
 
             <TextInput
               style={styles.modalInput}
