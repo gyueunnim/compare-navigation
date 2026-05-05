@@ -1,7 +1,19 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
 import { DirectionsResponse, GeocodeResult } from '../types';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+function resolveBaseUrl(): string {
+  // Expo Go 실행 시 Metro 번들러 호스트에서 IP 자동 추출
+  const debuggerHost = Constants.expoGoConfig?.debuggerHost;
+  if (debuggerHost) {
+    const host = debuggerHost.split(':')[0];
+    return `http://${host}:3000`;
+  }
+  // 수동 설정 fallback
+  return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+}
+
+const BASE_URL = resolveBaseUrl();
 
 const client = axios.create({
   baseURL: BASE_URL,
