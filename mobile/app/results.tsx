@@ -142,6 +142,21 @@ export default function ResultsScreen() {
     }
   }
 
+  function handleSwap() {
+    const next = {
+      startLat: currentCoords.endLat,
+      startLng: currentCoords.endLng,
+      startAddr: currentCoords.endAddr,
+      endLat: currentCoords.startLat,
+      endLng: currentCoords.startLng,
+      endAddr: currentCoords.startAddr,
+    };
+    setOriginLabel(destLabel);
+    setDestLabel(originLabel);
+    setCurrentCoords(next);
+    fetchByCoords(next.startLat, next.startLng, next.endLat, next.endLng, next.startAddr, next.endAddr);
+  }
+
   const fastestApp = (() => {
     if (!response) return null;
     const s = response.results.filter((r) => r.status === 'success');
@@ -174,7 +189,9 @@ export default function ResultsScreen() {
           <Text style={styles.routeLabelHint}>출발</Text>
           <Text style={styles.routeLabelText} numberOfLines={1}>{originLabel}</Text>
         </TouchableOpacity>
-        <Text style={styles.arrow}>→</Text>
+        <TouchableOpacity style={styles.swapBtn} onPress={handleSwap} activeOpacity={0.7}>
+          <Text style={styles.swapIcon}>⇄</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.routeLabelBtn} onPress={() => openEdit('dest')} activeOpacity={0.7}>
           <Text style={styles.routeLabelHint}>도착</Text>
           <Text style={styles.routeLabelText} numberOfLines={1}>{destLabel}</Text>
@@ -342,9 +359,17 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     fontWeight: '500',
   },
-  arrow: {
-    fontSize: 13,
-    color: '#AAAAAA',
+  swapBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  swapIcon: {
+    fontSize: 16,
+    color: '#555555',
   },
   scroll: {
     flex: 1,
