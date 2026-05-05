@@ -24,7 +24,7 @@ export default function SearchScreen() {
   const [destCandidates, setDestCandidates] = useState<GeocodeResult[]>([]);
   const [selectedOrigin, setSelectedOrigin] = useState<GeocodeResult | null>(null);
   const [selectedDest, setSelectedDest] = useState<GeocodeResult | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
+  const [locatingFor, setLocatingFor] = useState<'origin' | 'dest' | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
   const originTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,8 +70,8 @@ export default function SearchScreen() {
     setDestCandidates([]);
   }
 
-  async function handleCurrentLocation() {
-    setIsLocating(true);
+  async function handleCurrentLocation(target: 'origin' | 'dest') {
+    setLocatingFor(target);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -80,23 +80,33 @@ export default function SearchScreen() {
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const [geo] = await Location.reverseGeocodeAsync(loc.coords);
-      // district = 동, subregion = 구/군, city = 시/구, name = 건물·장소명
-      const addr = [geo.city, geo.district || geo.subregion, geo.street]
-        .filter(Boolean)
-        .join(' ');
-      const displayAddr = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
-      setOrigin(displayAddr);
-      setSelectedOrigin({
-        address: displayAddr,
-        lat: loc.coords.latitude,
-        lng: loc.coords.longitude,
-      });
-      setOriginCandidates([]);
+      const addr = [geo.city, geo.district || geo.subregion, geo.street].filter(Boolean).join(' ');
+      const label = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
+      const result: GeocodeResult = { address: label, lat: loc.coords.latitude, lng: loc.coords.longitude };
+
+      if (target === 'origin') {
+        setOrigin(label);
+        setSelectedOrigin(result);
+        setOriginCandidates([]);
+      } else {
+        setDestination(label);
+        setSelectedDest(result);
+        setDestCandidates([]);
+      }
     } catch {
       Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
     } finally {
-      setIsLocating(false);
+      setLocatingFor(null);
     }
+  }
+
+  function handleSwap() {
+    setOrigin(destination);
+    setDestination(origin);
+    setSelectedOrigin(selectedDest);
+    setSelectedDest(selectedOrigin);
+    setOriginCandidates([]);
+    setDestCandidates([]);
   }
 
   async function handleSearch() {
@@ -162,12 +172,13 @@ export default function SearchScreen() {
         </View>
 
         <View style={styles.form}>
+          {/* 출발지 */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>출발지</Text>
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
-                placeholder="출발지 주소 입력"
+                placeholder="출발지 주소 또는 장소명"
                 placeholderTextColor="#AAAAAA"
                 value={origin}
                 onChangeText={handleOriginChange}
@@ -175,10 +186,10 @@ export default function SearchScreen() {
               />
               <TouchableOpacity
                 style={styles.locationBtn}
-                onPress={handleCurrentLocation}
-                disabled={isLocating}
+                onPress={() => handleCurrentLocation('origin')}
+                disabled={locatingFor !== null}
               >
-                {isLocating ? (
+                {locatingFor === 'origin' ? (
                   <ActivityIndicator size="small" color="#555" />
                 ) : (
                   <Text style={styles.locationBtnText}>현위치</Text>
@@ -212,17 +223,40 @@ export default function SearchScreen() {
             )}
           </View>
 
+          {/* 스왑 버튼 */}
+          <View style={styles.swapRow}>
+            <View style={styles.swapLine} />
+            <TouchableOpacity style={styles.swapBtn} onPress={handleSwap} activeOpacity={0.7}>
+              <Text style={styles.swapIcon}>⇅</Text>
+            </TouchableOpacity>
+            <View style={styles.swapLine} />
+          </View>
+
+          {/* 목적지 */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>목적지</Text>
-            <TextInput
-              style={styles.inputFull}
-              placeholder="목적지 주소 입력"
-              placeholderTextColor="#AAAAAA"
-              value={destination}
-              onChangeText={handleDestChange}
-              returnKeyType="search"
-              onSubmitEditing={handleSearch}
-            />
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                placeholder="목적지 주소 또는 장소명"
+                placeholderTextColor="#AAAAAA"
+                value={destination}
+                onChangeText={handleDestChange}
+                returnKeyType="search"
+                onSubmitEditing={handleSearch}
+              />
+              <TouchableOpacity
+                style={styles.locationBtn}
+                onPress={() => handleCurrentLocation('dest')}
+                disabled={locatingFor !== null}
+              >
+                {locatingFor === 'dest' ? (
+                  <ActivityIndicator size="small" color="#555" />
+                ) : (
+                  <Text style={styles.locationBtnText}>현위치</Text>
+                )}
+              </TouchableOpacity>
+            </View>
             {destCandidates.length > 0 && (
               <View style={styles.dropdown}>
                 <FlatList
@@ -296,7 +330,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   form: {
-    gap: 16,
+    gap: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
@@ -330,16 +364,6 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     backgroundColor: '#FAFAFA',
   },
-  inputFull: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: '#1A1A1A',
-    backgroundColor: '#FAFAFA',
-  },
   locationBtn: {
     height: 48,
     paddingHorizontal: 14,
@@ -355,6 +379,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#333333',
+  },
+  swapRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  swapLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E8E8E8',
+  },
+  swapBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F0F0',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  swapIcon: {
+    fontSize: 16,
+    color: '#555555',
   },
   dropdown: {
     borderWidth: 1,
@@ -396,7 +445,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
   searchBtnDisabled: {
     backgroundColor: '#555555',
