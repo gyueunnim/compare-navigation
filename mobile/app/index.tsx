@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -14,11 +15,60 @@ import {
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { geocodeAddress } from '../services/api';
+import { GeocodeResult } from '../types';
 
 export default function SearchScreen() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
+  const [originCandidates, setOriginCandidates] = useState<GeocodeResult[]>([]);
+  const [destCandidates, setDestCandidates] = useState<GeocodeResult[]>([]);
+  const [selectedOrigin, setSelectedOrigin] = useState<GeocodeResult | null>(null);
+  const [selectedDest, setSelectedDest] = useState<GeocodeResult | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const originTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const destTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleOriginChange(text: string) {
+    setOrigin(text);
+    setSelectedOrigin(null);
+    setOriginCandidates([]);
+    if (originTimer.current) clearTimeout(originTimer.current);
+    if (text.trim().length < 2) return;
+    originTimer.current = setTimeout(async () => {
+      try {
+        const results = await geocodeAddress(text.trim());
+        setOriginCandidates(results);
+      } catch {}
+    }, 400);
+  }
+
+  function handleDestChange(text: string) {
+    setDestination(text);
+    setSelectedDest(null);
+    setDestCandidates([]);
+    if (destTimer.current) clearTimeout(destTimer.current);
+    if (text.trim().length < 2) return;
+    destTimer.current = setTimeout(async () => {
+      try {
+        const results = await geocodeAddress(text.trim());
+        setDestCandidates(results);
+      } catch {}
+    }, 400);
+  }
+
+  function selectOrigin(item: GeocodeResult) {
+    setOrigin(item.name || item.address);
+    setSelectedOrigin(item);
+    setOriginCandidates([]);
+  }
+
+  function selectDest(item: GeocodeResult) {
+    setDestination(item.name || item.address);
+    setSelectedDest(item);
+    setDestCandidates([]);
+  }
 
   async function handleCurrentLocation() {
     setIsLocating(true);
@@ -28,10 +78,20 @@ export default function SearchScreen() {
         Alert.alert('권한 필요', '현재 위치 사용을 위해 위치 권한을 허용해주세요.');
         return;
       }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const [geo] = await Location.reverseGeocodeAsync(loc.coords);
-      const addr = [geo.city, geo.district, geo.street].filter(Boolean).join(' ');
-      setOrigin(addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`);
+      // district = 동, subregion = 구/군, city = 시/구, name = 건물·장소명
+      const addr = [geo.city, geo.district || geo.subregion, geo.street]
+        .filter(Boolean)
+        .join(' ');
+      const displayAddr = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
+      setOrigin(displayAddr);
+      setSelectedOrigin({
+        address: displayAddr,
+        lat: loc.coords.latitude,
+        lng: loc.coords.longitude,
+      });
+      setOriginCandidates([]);
     } catch {
       Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
     } finally {
@@ -49,34 +109,44 @@ export default function SearchScreen() {
       return;
     }
 
+    setIsSearching(true);
     try {
-      const [origins, dests] = await Promise.all([
-        geocodeAddress(origin.trim()),
-        geocodeAddress(destination.trim()),
-      ]);
+      let originResult = selectedOrigin;
+      let destResult = selectedDest;
 
-      if (!origins.length) {
-        Alert.alert('검색 실패', `출발지 "${origin}"를 찾을 수 없습니다.`);
-        return;
+      if (!originResult) {
+        const results = await geocodeAddress(origin.trim());
+        if (!results.length) {
+          Alert.alert('검색 실패', `출발지 "${origin}"를 찾을 수 없습니다.`);
+          return;
+        }
+        originResult = results[0];
       }
-      if (!dests.length) {
-        Alert.alert('검색 실패', `목적지 "${destination}"를 찾을 수 없습니다.`);
-        return;
+
+      if (!destResult) {
+        const results = await geocodeAddress(destination.trim());
+        if (!results.length) {
+          Alert.alert('검색 실패', `목적지 "${destination}"를 찾을 수 없습니다.`);
+          return;
+        }
+        destResult = results[0];
       }
 
       router.push({
         pathname: '/results',
         params: {
-          startLat: origins[0].lat,
-          startLng: origins[0].lng,
-          endLat: dests[0].lat,
-          endLng: dests[0].lng,
-          startAddr: origins[0].address,
-          endAddr: dests[0].address,
+          startLat: originResult.lat,
+          startLng: originResult.lng,
+          endLat: destResult.lat,
+          endLng: destResult.lng,
+          startAddr: originResult.address,
+          endAddr: destResult.address,
         },
       });
     } catch {
       Alert.alert('오류', '주소 검색 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
+    } finally {
+      setIsSearching(false);
     }
   }
 
@@ -100,7 +170,7 @@ export default function SearchScreen() {
                 placeholder="출발지 주소 입력"
                 placeholderTextColor="#AAAAAA"
                 value={origin}
-                onChangeText={setOrigin}
+                onChangeText={handleOriginChange}
                 returnKeyType="next"
               />
               <TouchableOpacity
@@ -115,6 +185,31 @@ export default function SearchScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            {originCandidates.length > 0 && (
+              <View style={styles.dropdown}>
+                <FlatList
+                  data={originCandidates}
+                  keyExtractor={(_, i) => String(i)}
+                  keyboardShouldPersistTaps="handled"
+                  scrollEnabled={false}
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]}
+                      onPress={() => selectOrigin(item)}
+                    >
+                      {item.name ? (
+                        <>
+                          <Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
+                          <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -124,14 +219,48 @@ export default function SearchScreen() {
               placeholder="목적지 주소 입력"
               placeholderTextColor="#AAAAAA"
               value={destination}
-              onChangeText={setDestination}
+              onChangeText={handleDestChange}
               returnKeyType="search"
               onSubmitEditing={handleSearch}
             />
+            {destCandidates.length > 0 && (
+              <View style={styles.dropdown}>
+                <FlatList
+                  data={destCandidates}
+                  keyExtractor={(_, i) => String(i)}
+                  keyboardShouldPersistTaps="handled"
+                  scrollEnabled={false}
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]}
+                      onPress={() => selectDest(item)}
+                    >
+                      {item.name ? (
+                        <>
+                          <Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
+                          <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
           </View>
 
-          <TouchableOpacity style={styles.searchBtn} onPress={handleSearch} activeOpacity={0.85}>
-            <Text style={styles.searchBtnText}>경로 비교하기</Text>
+          <TouchableOpacity
+            style={[styles.searchBtn, isSearching && styles.searchBtnDisabled]}
+            onPress={handleSearch}
+            activeOpacity={0.85}
+            disabled={isSearching}
+          >
+            {isSearching ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.searchBtnText}>경로 비교하기</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -227,6 +356,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333333',
   },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  dropdownItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dropdownDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E8E8E8',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#1A1A1A',
+  },
+  dropdownName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  dropdownAddr: {
+    fontSize: 12,
+    color: '#888888',
+    marginTop: 2,
+  },
   searchBtn: {
     height: 52,
     backgroundColor: '#1A1A1A',
@@ -234,6 +397,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
+  },
+  searchBtnDisabled: {
+    backgroundColor: '#555555',
   },
   searchBtnText: {
     color: '#FFFFFF',

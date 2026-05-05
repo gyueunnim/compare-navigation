@@ -23,6 +23,7 @@ export interface DirectionsResponse {
 }
 
 export interface GeocodeResult {
+  name?: string;
   address: string;
   lat: number;
   lng: number;
