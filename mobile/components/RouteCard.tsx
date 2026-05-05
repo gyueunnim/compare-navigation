@@ -22,64 +22,78 @@ function formatDuration(minutes: number): string {
 
 export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardProps) {
   const config = APP_CONFIG[result.app];
-  const isDisabled = result.status !== 'success';
 
   if (result.status === 'error' || result.status === 'no_route') {
-    const msg = result.status === 'no_route' ? '경로 없음' : '조회 실패';
     return (
-      <View style={[styles.card, styles.disabledCard]}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.appName, styles.disabledText]}>{config.name}</Text>
+      <View style={styles.card}>
+        <View style={[styles.header, { backgroundColor: '#F5F5F5' }]}>
+          <View style={[styles.colorBar, { backgroundColor: '#CCCCCC' }]} />
+          <Text style={[styles.appName, { color: '#999999' }]}>{config.name}</Text>
         </View>
-        <Text style={styles.disabledMessage}>{msg}</Text>
-        {result.errorMessage && (
-          <Text style={styles.errorDetail}>{result.errorMessage}</Text>
-        )}
+        <View style={styles.errorBody}>
+          <Text style={styles.errorMsg}>
+            {result.status === 'no_route' ? '경로를 찾을 수 없습니다' : '조회에 실패했습니다'}
+          </Text>
+          {result.errorMessage && (
+            <Text style={styles.errorDetail}>{result.errorMessage}</Text>
+          )}
+        </View>
       </View>
     );
   }
 
   const tollLabel = result.toll > 0 ? formatMoney(result.toll) : '무료';
-  const hasToll = result.toll > 0;
+  const tintColor = config.color + '22';  // 13% 투명도 틴트
 
   return (
-    <TouchableOpacity
-      style={[styles.card, { borderLeftColor: config.color, borderLeftWidth: 4 }]}
-      onPress={onPress}
-      activeOpacity={0.85}
-      disabled={isDisabled}
-    >
-      <View style={styles.headerRow}>
-        <View style={styles.appInfo}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.88}>
+      {/* 헤더: 앱 이름 + 배지 */}
+      <View style={[styles.header, { backgroundColor: tintColor }]}>
+        <View style={[styles.colorBar, { backgroundColor: config.color }]} />
+        <View style={styles.headerContent}>
           <Text style={styles.appName}>{config.name}</Text>
           <Text style={styles.characteristic}>{config.characteristic}</Text>
         </View>
         <View style={styles.badges}>
-          {isFastest && <View style={[styles.badge, styles.fastBadge]}><Text style={styles.badgeText}>가장 빠름</Text></View>}
-          {isCheapest && <View style={[styles.badge, styles.cheapBadge]}><Text style={styles.badgeText}>가장 저렴</Text></View>}
+          {isFastest && (
+            <View style={styles.fastBadge}>
+              <Text style={styles.fastBadgeText}>⚡ 가장 빠름</Text>
+            </View>
+          )}
+          {isCheapest && (
+            <View style={styles.cheapBadge}>
+              <Text style={styles.cheapBadgeText}>💰 가장 저렴</Text>
+            </View>
+          )}
         </View>
       </View>
 
+      {/* 스탯 */}
       <View style={styles.statsRow}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{formatDuration(result.duration)}</Text>
-          <Text style={styles.statLabel}>소요 시간</Text>
+        <View style={styles.primaryStat}>
+          <Text style={styles.primaryValue}>{formatDuration(result.duration)}</Text>
+          <Text style={styles.statLabel}>소요시간</Text>
         </View>
-        <View style={styles.divider} />
+        <View style={styles.statDivider} />
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{result.distance}km</Text>
+          <Text style={styles.statValue}>{result.distance} km</Text>
           <Text style={styles.statLabel}>거리</Text>
         </View>
-        <View style={styles.divider} />
+        <View style={styles.statDivider} />
         <View style={styles.stat}>
-          <Text style={[styles.statValue, hasToll && styles.tollValue]}>{tollLabel}</Text>
+          <Text style={[styles.statValue, result.toll > 0 && styles.tollPaid]}>
+            {tollLabel}
+          </Text>
           <Text style={styles.statLabel}>통행료</Text>
         </View>
       </View>
 
-      <Text style={[styles.launchHint, { color: config.color }]}>
-        길안내 시작 →
-      </Text>
+      {/* 길안내 버튼 */}
+      <View style={[styles.launchBtn, { backgroundColor: config.color }]}>
+        <Text style={[styles.launchText, { color: config.onColor }]}>
+          길안내 시작하기 →
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -87,27 +101,30 @@ export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardP
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    marginBottom: 14,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingRight: 14,
     gap: 12,
   },
-  disabledCard: {
-    backgroundColor: '#F5F5F5',
-    borderLeftWidth: 4,
-    borderLeftColor: '#CCCCCC',
+  colorBar: {
+    width: 5,
+    alignSelf: 'stretch',
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  appInfo: {
+  headerContent: {
+    flex: 1,
     gap: 2,
   },
   appName: {
@@ -117,77 +134,96 @@ const styles = StyleSheet.create({
   },
   characteristic: {
     fontSize: 12,
-    color: '#888888',
-  },
-  disabledText: {
-    color: '#999999',
-  },
-  disabledMessage: {
-    fontSize: 14,
-    color: '#AAAAAA',
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-  errorDetail: {
-    fontSize: 12,
-    color: '#BBBBBB',
-    textAlign: 'center',
+    color: '#777777',
   },
   badges: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-    maxWidth: 160,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    gap: 5,
+    alignItems: 'flex-end',
   },
   fastBadge: {
-    backgroundColor: '#EBF5FF',
+    backgroundColor: '#DBEAFE',
+    borderRadius: 20,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  fastBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D4ED8',
   },
   cheapBadge: {
-    backgroundColor: '#EDFBF0',
+    backgroundColor: '#D1FAE5',
+    borderRadius: 20,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
-  badgeText: {
+  cheapBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: '700',
+    color: '#065F46',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
-    borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  primaryStat: {
+    flex: 1.2,
+    alignItems: 'center',
+    gap: 3,
+  },
+  primaryValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1A1A1A',
   },
   stat: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   statValue: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1A1A1A',
   },
-  tollValue: {
-    color: '#D94F4F',
+  tollPaid: {
+    color: '#DC2626',
   },
   statLabel: {
     fontSize: 11,
-    color: '#888888',
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
-  divider: {
+  statDivider: {
     width: 1,
-    height: 32,
-    backgroundColor: '#E0E0E0',
+    height: 36,
+    backgroundColor: '#F0F0F0',
   },
-  launchHint: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'right',
+  launchBtn: {
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  launchText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // 에러 상태
+  errorBody: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    gap: 4,
+  },
+  errorMsg: {
+    fontSize: 14,
+    color: '#AAAAAA',
+  },
+  errorDetail: {
+    fontSize: 12,
+    color: '#CCCCCC',
   },
 });

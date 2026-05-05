@@ -9,6 +9,7 @@ interface AppConfig {
   name: string;
   shortName: string;
   color: string;
+  onColor: string;      // 브랜드 컬러 위에 올라가는 텍스트 색
   characteristic: string;
   deeplink: (start: Coordinate, end: Coordinate, startName?: string, endName?: string) => string;
   androidPackage: string;
@@ -20,6 +21,7 @@ export const APP_CONFIG: Record<AppType, AppConfig> = {
     name: '네이버 지도',
     shortName: '네이버',
     color: '#03C75A',
+    onColor: '#FFFFFF',
     characteristic: '균형 경로',
     deeplink: (s, e, sName, dName) =>
       `nmap://route/car?slat=${s.lat}&slng=${s.lng}&dlat=${e.lat}&dlng=${e.lng}` +
@@ -36,6 +38,7 @@ export const APP_CONFIG: Record<AppType, AppConfig> = {
     name: 'T맵',
     shortName: 'T맵',
     color: '#E51937',
+    onColor: '#FFFFFF',
     characteristic: '빠른 길',
     deeplink: (s, e, sName, dName) =>
       `tmap://route?startx=${s.lng}&starty=${s.lat}&goalx=${e.lng}&goaly=${e.lat}` +
@@ -51,6 +54,7 @@ export const APP_CONFIG: Record<AppType, AppConfig> = {
     name: '카카오맵',
     shortName: '카카오',
     color: '#FAE100',
+    onColor: '#1A1A1A',
     characteristic: '대안 경로',
     deeplink: (s, e) =>
       `kakaomap://route?sp=${s.lat},${s.lng}&ep=${e.lat},${e.lng}&by=CAR`,
