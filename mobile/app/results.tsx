@@ -31,7 +31,12 @@ export default function ResultsScreen() {
     endLng: string;
     startAddr?: string;
     endAddr?: string;
+    apps?: string;
   }>();
+
+  const enabledApps = new Set<AppType>(
+    (params.apps ? params.apps.split(',') : ['naver', 'tmap', 'kakao']) as AppType[]
+  );
 
   const { state, response, error, fetchByCoords, isLoading } = useRouteSearch();
 
@@ -159,14 +164,13 @@ export default function ResultsScreen() {
 
   const fastestApp = (() => {
     if (!response) return null;
-    const s = response.results.filter((r) => r.status === 'success');
+    const s = response.results.filter((r) => r.status === 'success' && enabledApps.has(r.app));
     return s.reduce<RouteResult | null>((m, r) => (!m || r.duration < m.duration ? r : m), null)?.app ?? null;
   })();
 
   const cheapestApp = (() => {
     if (!response) return null;
-    // 통행료가 있는 경우만 비교 (0원끼리는 비교 불필요)
-    const s = response.results.filter((r) => r.status === 'success' && r.toll > 0);
+    const s = response.results.filter((r) => r.status === 'success' && r.toll > 0 && enabledApps.has(r.app));
     return s.reduce<RouteResult | null>((m, r) => (!m || r.toll < m.toll ? r : m), null)?.app ?? null;
   })();
 
@@ -220,6 +224,7 @@ export default function ResultsScreen() {
         {response && (
           <>
             {response.results
+              .filter((r) => enabledApps.has(r.app))
               .slice()
               .sort((a, b) => {
                 if (a.status === 'success' && b.status !== 'success') return -1;

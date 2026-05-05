@@ -15,7 +15,10 @@ import {
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { geocodeAddress } from '../services/api';
-import { GeocodeResult } from '../types';
+import { GeocodeResult, AppType } from '../types';
+import { APP_CONFIG } from '../constants/apps';
+
+type SelectedApps = Record<AppType, boolean>;
 
 export default function SearchScreen() {
   const [origin, setOrigin] = useState('');
@@ -26,9 +29,16 @@ export default function SearchScreen() {
   const [selectedDest, setSelectedDest] = useState<GeocodeResult | null>(null);
   const [locatingFor, setLocatingFor] = useState<'origin' | 'dest' | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedApps, setSelectedApps] = useState<SelectedApps>({ naver: true, tmap: true, kakao: true });
 
   const originTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const destTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function toggleApp(app: AppType) {
+    const next = { ...selectedApps, [app]: !selectedApps[app] };
+    if (!Object.values(next).some(Boolean)) return; // 최소 1개 유지
+    setSelectedApps(next);
+  }
 
   function handleOriginChange(text: string) {
     setOrigin(text);
@@ -37,10 +47,7 @@ export default function SearchScreen() {
     if (originTimer.current) clearTimeout(originTimer.current);
     if (text.trim().length < 2) return;
     originTimer.current = setTimeout(async () => {
-      try {
-        const results = await geocodeAddress(text.trim());
-        setOriginCandidates(results);
-      } catch {}
+      try { setOriginCandidates(await geocodeAddress(text.trim())); } catch {}
     }, 400);
   }
 
@@ -51,10 +58,7 @@ export default function SearchScreen() {
     if (destTimer.current) clearTimeout(destTimer.current);
     if (text.trim().length < 2) return;
     destTimer.current = setTimeout(async () => {
-      try {
-        const results = await geocodeAddress(text.trim());
-        setDestCandidates(results);
-      } catch {}
+      try { setDestCandidates(await geocodeAddress(text.trim())); } catch {}
     }, 400);
   }
 
@@ -74,38 +78,22 @@ export default function SearchScreen() {
     setLocatingFor(target);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('권한 필요', '현재 위치 사용을 위해 위치 권한을 허용해주세요.');
-        return;
-      }
+      if (status !== 'granted') { Alert.alert('권한 필요', '위치 권한을 허용해주세요.'); return; }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const [geo] = await Location.reverseGeocodeAsync(loc.coords);
       const addr = [geo.city, geo.district || geo.subregion, geo.street].filter(Boolean).join(' ');
       const label = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
       const result: GeocodeResult = { address: label, lat: loc.coords.latitude, lng: loc.coords.longitude };
-      if (target === 'origin') {
-        setOrigin(label);
-        setSelectedOrigin(result);
-        setOriginCandidates([]);
-      } else {
-        setDestination(label);
-        setSelectedDest(result);
-        setDestCandidates([]);
-      }
-    } catch {
-      Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
-    } finally {
-      setLocatingFor(null);
-    }
+      if (target === 'origin') { setOrigin(label); setSelectedOrigin(result); setOriginCandidates([]); }
+      else { setDestination(label); setSelectedDest(result); setDestCandidates([]); }
+    } catch { Alert.alert('오류', '현재 위치를 가져올 수 없습니다.'); }
+    finally { setLocatingFor(null); }
   }
 
   function handleSwap() {
-    setOrigin(destination);
-    setDestination(origin);
-    setSelectedOrigin(selectedDest);
-    setSelectedDest(selectedOrigin);
-    setOriginCandidates([]);
-    setDestCandidates([]);
+    setOrigin(destination); setDestination(origin);
+    setSelectedOrigin(selectedDest); setSelectedDest(selectedOrigin);
+    setOriginCandidates([]); setDestCandidates([]);
   }
 
   async function handleSearch() {
@@ -128,49 +116,77 @@ export default function SearchScreen() {
         destResult = results[0];
       }
 
+      const apps = (Object.keys(selectedApps) as AppType[]).filter(a => selectedApps[a]).join(',');
+
       router.push({
         pathname: '/results',
         params: {
           startLat: originResult.lat, startLng: originResult.lng,
           endLat: destResult.lat, endLng: destResult.lng,
           startAddr: originResult.address, endAddr: destResult.address,
+          apps,
         },
       });
     } catch {
       Alert.alert('오류', '주소 검색 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
-    } finally {
-      setIsSearching(false);
-    }
+    } finally { setIsSearching(false); }
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={styles.inner} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={styles.inner}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* 헤더 */}
         <View style={styles.header}>
           <View style={styles.logoRow}>
-            <View style={styles.logoIcon}>
-              <Text style={styles.logoEmoji}>🧭</Text>
+            <View style={styles.logoBox}>
+              <Text style={styles.logoText}>BR</Text>
             </View>
-            <Text style={styles.title}>네비모아</Text>
-          </View>
-          <Text style={styles.subtitle}>카카오 네이버 티맵을 한눈에!</Text>
-          <View style={styles.appBadges}>
-            <View style={[styles.appBadge, { borderColor: '#03C75A' }]}>
-              <View style={[styles.appDot, { backgroundColor: '#03C75A' }]} />
-              <Text style={[styles.appBadgeText, { color: '#03C75A' }]}>네이버</Text>
-            </View>
-            <View style={[styles.appBadge, { borderColor: '#E51937' }]}>
-              <View style={[styles.appDot, { backgroundColor: '#E51937' }]} />
-              <Text style={[styles.appBadgeText, { color: '#E51937' }]}>T맵</Text>
-            </View>
-            <View style={[styles.appBadge, { borderColor: '#D4AC00', backgroundColor: '#FAE10022' }]}>
-              <View style={[styles.appDot, { backgroundColor: '#D4AC00' }]} />
-              <Text style={[styles.appBadgeText, { color: '#9A7A00' }]}>카카오</Text>
+            <View>
+              <Text style={styles.title}>
+                <Text style={styles.titleThin}>Best</Text>
+                <Text style={styles.titleBold}>Route</Text>
+              </Text>
+              <Text style={styles.subtitle}>카카오 네이버 티맵을 한눈에!</Text>
             </View>
           </View>
         </View>
 
+        {/* 폼 카드 */}
         <View style={styles.form}>
+          {/* 앱 선택 */}
+          <View style={styles.appSelectorGroup}>
+            <Text style={styles.label}>비교할 앱</Text>
+            <View style={styles.appToggleRow}>
+              {(['naver', 'tmap', 'kakao'] as AppType[]).map((app) => {
+                const cfg = APP_CONFIG[app];
+                const on = selectedApps[app];
+                return (
+                  <TouchableOpacity
+                    key={app}
+                    style={[
+                      styles.appToggle,
+                      on
+                        ? { borderColor: cfg.color, backgroundColor: cfg.color + '1A' }
+                        : styles.appToggleOff,
+                    ]}
+                    onPress={() => toggleApp(app)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.appDot, { backgroundColor: on ? cfg.color : '#CBD5E1' }]} />
+                    <Text style={[styles.appToggleText, !on && styles.appToggleTextOff]}>
+                      {cfg.shortName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
           {/* 출발지 */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>출발지</Text>
@@ -183,31 +199,19 @@ export default function SearchScreen() {
                 onChangeText={handleOriginChange}
                 returnKeyType="next"
               />
-              <TouchableOpacity
-                style={styles.locationBtn}
-                onPress={() => handleCurrentLocation('origin')}
-                disabled={locatingFor !== null}
-              >
-                {locatingFor === 'origin'
-                  ? <ActivityIndicator size="small" color="#3B5BDB" />
-                  : <Text style={styles.locationBtnText}>현위치</Text>}
+              <TouchableOpacity style={styles.locationBtn} onPress={() => handleCurrentLocation('origin')} disabled={locatingFor !== null}>
+                {locatingFor === 'origin' ? <ActivityIndicator size="small" color="#3B5BDB" /> : <Text style={styles.locationBtnText}>현위치</Text>}
               </TouchableOpacity>
             </View>
             {originCandidates.length > 0 && (
               <View style={styles.dropdown}>
                 <FlatList
-                  data={originCandidates}
-                  keyExtractor={(_, i) => String(i)}
-                  keyboardShouldPersistTaps="handled"
-                  scrollEnabled={false}
+                  data={originCandidates} keyExtractor={(_, i) => String(i)}
+                  keyboardShouldPersistTaps="handled" scrollEnabled={false}
                   renderItem={({ item, index }) => (
-                    <TouchableOpacity
-                      style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]}
-                      onPress={() => selectOrigin(item)}
-                    >
+                    <TouchableOpacity style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]} onPress={() => selectOrigin(item)}>
                       {item.name
-                        ? <><Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
-                            <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text></>
+                        ? <><Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text><Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text></>
                         : <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>}
                     </TouchableOpacity>
                   )}
@@ -216,7 +220,7 @@ export default function SearchScreen() {
             )}
           </View>
 
-          {/* 스왑 버튼 */}
+          {/* 스왑 */}
           <View style={styles.swapRow}>
             <View style={styles.swapLine} />
             <TouchableOpacity style={styles.swapBtn} onPress={handleSwap} activeOpacity={0.7}>
@@ -238,31 +242,19 @@ export default function SearchScreen() {
                 returnKeyType="search"
                 onSubmitEditing={handleSearch}
               />
-              <TouchableOpacity
-                style={styles.locationBtn}
-                onPress={() => handleCurrentLocation('dest')}
-                disabled={locatingFor !== null}
-              >
-                {locatingFor === 'dest'
-                  ? <ActivityIndicator size="small" color="#3B5BDB" />
-                  : <Text style={styles.locationBtnText}>현위치</Text>}
+              <TouchableOpacity style={styles.locationBtn} onPress={() => handleCurrentLocation('dest')} disabled={locatingFor !== null}>
+                {locatingFor === 'dest' ? <ActivityIndicator size="small" color="#3B5BDB" /> : <Text style={styles.locationBtnText}>현위치</Text>}
               </TouchableOpacity>
             </View>
             {destCandidates.length > 0 && (
               <View style={styles.dropdown}>
                 <FlatList
-                  data={destCandidates}
-                  keyExtractor={(_, i) => String(i)}
-                  keyboardShouldPersistTaps="handled"
-                  scrollEnabled={false}
+                  data={destCandidates} keyExtractor={(_, i) => String(i)}
+                  keyboardShouldPersistTaps="handled" scrollEnabled={false}
                   renderItem={({ item, index }) => (
-                    <TouchableOpacity
-                      style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]}
-                      onPress={() => selectDest(item)}
-                    >
+                    <TouchableOpacity style={[styles.dropdownItem, index > 0 && styles.dropdownDivider]} onPress={() => selectDest(item)}>
                       {item.name
-                        ? <><Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text>
-                            <Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text></>
+                        ? <><Text style={styles.dropdownName} numberOfLines={1}>{item.name}</Text><Text style={styles.dropdownAddr} numberOfLines={1}>{item.address}</Text></>
                         : <Text style={styles.dropdownText} numberOfLines={1}>{item.address}</Text>}
                     </TouchableOpacity>
                   )}
@@ -273,9 +265,7 @@ export default function SearchScreen() {
 
           <TouchableOpacity
             style={[styles.searchBtn, isSearching && styles.searchBtnDisabled]}
-            onPress={handleSearch}
-            activeOpacity={0.85}
-            disabled={isSearching}
+            onPress={handleSearch} activeOpacity={0.85} disabled={isSearching}
           >
             {isSearching
               ? <ActivityIndicator size="small" color="#FFFFFF" />
@@ -284,7 +274,7 @@ export default function SearchScreen() {
         </View>
 
         <Text style={styles.disclaimer}>
-          각 내비게이션 서비스의 경로 계산 방식에 따라 실제 결과는 차이가 있을 수 있습니다.
+          각 서비스의 경로 계산 방식에 따라 실제 결과는 차이가 있을 수 있습니다.
         </Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -293,89 +283,83 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F0F4FF' },
-  inner: { flex: 1, paddingHorizontal: 20, paddingTop: 40, gap: 28 },
-  header: { gap: 10 },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoIcon: {
-    width: 44, height: 44, borderRadius: 14,
+  inner: {
+    flex: 1,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    gap: 24,
+    paddingBottom: 16,
+  },
+  // 헤더
+  header: {},
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  logoBox: {
+    width: 52, height: 52, borderRadius: 16,
     backgroundColor: '#3B5BDB',
     justifyContent: 'center', alignItems: 'center',
     shadowColor: '#3B5BDB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 10,
+    elevation: 8,
   },
-  logoEmoji: { fontSize: 22 },
-  title: { fontSize: 30, fontWeight: '800', color: '#1E3A8A', letterSpacing: -0.5 },
-  subtitle: { fontSize: 16, color: '#64748B', fontWeight: '500' },
-  appBadges: { flexDirection: 'row', gap: 8, marginTop: 2 },
-  appBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderWidth: 1.5, borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 5,
-    backgroundColor: '#FFFFFF',
-  },
-  appDot: { width: 7, height: 7, borderRadius: 4 },
-  appBadgeText: { fontSize: 12, fontWeight: '700' },
+  logoText: { fontSize: 20, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.5 },
+  title: { fontSize: 28, letterSpacing: -0.5 },
+  titleThin: { fontWeight: '300', color: '#1E3A8A' },
+  titleBold: { fontWeight: '900', color: '#3B5BDB' },
+  subtitle: { fontSize: 14, color: '#64748B', fontWeight: '500', marginTop: 2 },
+  // 폼
   form: {
-    gap: 8,
+    gap: 10,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
     shadowColor: '#3B5BDB',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowOpacity: 0.08, shadowRadius: 16,
     elevation: 3,
   },
+  divider: { height: 1, backgroundColor: '#EEF2FF', marginVertical: 2 },
+  // 앱 선택
+  appSelectorGroup: { gap: 8 },
+  appToggleRow: { flexDirection: 'row', gap: 8 },
+  appToggle: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 9,
+    borderWidth: 1.5, borderRadius: 12,
+  },
+  appToggleOff: { borderColor: '#E2E8F0', backgroundColor: '#F8FAFF' },
+  appDot: { width: 8, height: 8, borderRadius: 4 },
+  appToggleText: { fontSize: 13, fontWeight: '700', color: '#1E293B' },
+  appToggleTextOff: { color: '#94A3B8' },
+  // 입력
   inputGroup: { gap: 6 },
   label: { fontSize: 12, fontWeight: '700', color: '#3B5BDB', letterSpacing: 0.5 },
   inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
-    flex: 1,
-    height: 48,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: '#1E293B',
-    backgroundColor: '#F8FAFF',
+    flex: 1, height: 48,
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 12,
+    paddingHorizontal: 14, fontSize: 15, color: '#1E293B', backgroundColor: '#F8FAFF',
   },
   locationBtn: {
-    height: 48,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#C7D7FD',
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
-    minWidth: 64,
+    height: 48, paddingHorizontal: 14,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#C7D7FD', borderRadius: 12,
+    backgroundColor: '#EEF2FF', minWidth: 64,
   },
   locationBtnText: { fontSize: 12, fontWeight: '700', color: '#3B5BDB' },
   swapRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 },
   swapLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
   swapBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#EEF2FF',
-    borderWidth: 1.5, borderColor: '#C7D7FD',
-    justifyContent: 'center', alignItems: 'center',
-    marginHorizontal: 12,
+    backgroundColor: '#EEF2FF', borderWidth: 1.5, borderColor: '#C7D7FD',
+    justifyContent: 'center', alignItems: 'center', marginHorizontal: 12,
   },
   swapIcon: { fontSize: 16, color: '#3B5BDB' },
   dropdown: {
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    shadowColor: '#3B5BDB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 12,
+    backgroundColor: '#FFFFFF', overflow: 'hidden',
+    shadowColor: '#3B5BDB', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
   },
   dropdownItem: { paddingHorizontal: 14, paddingVertical: 12 },
   dropdownDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0' },
@@ -384,7 +368,7 @@ const styles = StyleSheet.create({
   dropdownText: { fontSize: 14, color: '#1E293B' },
   searchBtn: {
     height: 52, backgroundColor: '#3B5BDB',
-    borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 8,
+    borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 6,
   },
   searchBtnDisabled: { backgroundColor: '#93A8F4' },
   searchBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
