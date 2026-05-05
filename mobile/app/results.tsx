@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { LoadingCard } from '../components/LoadingCard';
 import { RouteCard } from '../components/RouteCard';
 import { openNavigationApp } from '../services/deeplink';
@@ -55,6 +56,7 @@ export default function ResultsScreen() {
   const [editText, setEditText] = useState('');
   const [editCandidates, setEditCandidates] = useState<GeocodeResult[]>([]);
   const [isEditSearching, setIsEditSearching] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const editTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -106,6 +108,35 @@ export default function ResultsScreen() {
       fetchByCoords(next.startLat, next.startLng, item.lat, item.lng, next.startAddr, item.address);
     }
     setEditMode(null);
+  }
+
+  async function handleCurrentLocation() {
+    setIsLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '현재 위치 사용을 위해 위치 권한을 허용해주세요.');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const [geo] = await Location.reverseGeocodeAsync(loc.coords);
+      const addr = [geo.city, geo.district || geo.subregion, geo.street].filter(Boolean).join(' ');
+      const label = addr || `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
+      setOriginLabel(label);
+      const next = {
+        ...currentCoords,
+        startLat: loc.coords.latitude,
+        startLng: loc.coords.longitude,
+        startAddr: label,
+      };
+      setCurrentCoords(next);
+      fetchByCoords(loc.coords.latitude, loc.coords.longitude, next.endLat, next.endLng, label, next.endAddr);
+      setEditMode(null);
+    } catch {
+      Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
+    } finally {
+      setIsLocating(false);
+    }
   }
 
   const fastestApp = (() => {
@@ -210,6 +241,20 @@ export default function ResultsScreen() {
                 <Text style={styles.modalCloseText}>✕</Text>
               </TouchableOpacity>
             </View>
+
+            {editMode === 'origin' && (
+              <TouchableOpacity
+                style={styles.locationBtn}
+                onPress={handleCurrentLocation}
+                disabled={isLocating}
+              >
+                {isLocating ? (
+                  <ActivityIndicator size="small" color="#555" />
+                ) : (
+                  <Text style={styles.locationBtnText}>📍 현재 위치로 설정</Text>
+                )}
+              </TouchableOpacity>
+            )}
 
             <TextInput
               style={styles.modalInput}
@@ -400,5 +445,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     color: '#AAAAAA',
+  },
+  locationBtn: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  locationBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
   },
 });
