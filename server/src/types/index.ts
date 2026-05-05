@@ -11,7 +11,8 @@ export interface RouteResult {
   app: AppType;
   duration: number;
   distance: number;
-  cost: number | null;
+  toll: number;         // 통행료 (0 = 무료)
+  fuel: number | null;  // 유류비 추정 (네이버만 제공, null = 미제공)
   status: RouteStatus;
   errorMessage?: string;
 }

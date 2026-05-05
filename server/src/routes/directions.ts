@@ -41,7 +41,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
   const toResult = (settled: PromiseSettledResult<RouteResult>, app: RouteResult['app']): RouteResult => {
     if (settled.status === 'fulfilled') return settled.value;
-    return { app, duration: 0, distance: 0, cost: null, status: 'error', errorMessage: `${app} 연결 실패` };
+    return { app, duration: 0, distance: 0, toll: 0, fuel: null, status: 'error', errorMessage: `${app} 연결 실패` };
   };
 
   res.json({

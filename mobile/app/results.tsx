@@ -147,8 +147,9 @@ export default function ResultsScreen() {
 
   const cheapestApp = (() => {
     if (!response) return null;
-    const s = response.results.filter((r) => r.status === 'success' && r.cost !== null);
-    return s.reduce<RouteResult | null>((m, r) => (!m || r.cost! < m.cost! ? r : m), null)?.app ?? null;
+    // 통행료가 있는 경우만 비교 (0원끼리는 비교 불필요)
+    const s = response.results.filter((r) => r.status === 'success' && r.toll > 0);
+    return s.reduce<RouteResult | null>((m, r) => (!m || r.toll < m.toll ? r : m), null)?.app ?? null;
   })();
 
   async function handleCardPress(app: AppType) {

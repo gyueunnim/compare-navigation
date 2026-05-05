@@ -25,16 +25,16 @@ export async function getTmapRoute(start: Coordinate, end: Coordinate): Promise<
 
     const props = res.data?.features?.[0]?.properties;
     if (!props) {
-      return { app: 'tmap', duration: 0, distance: 0, cost: null, status: 'no_route' };
+      return { app: 'tmap', duration: 0, distance: 0, toll: 0, fuel: null, status: 'no_route' };
     }
 
     const duration = Math.ceil(props.totalTime / 60);
     const distance = parseFloat((props.totalDistance / 1000).toFixed(1));
-    const cost = props.totalFare > 0 ? props.totalFare : null;
+    const toll = props.totalFare ?? 0;
 
-    return { app: 'tmap', duration, distance, cost, status: 'success' };
+    return { app: 'tmap', duration, distance, toll, fuel: null, status: 'success' };
   } catch (err) {
     console.error('[tmap]', err);
-    return { app: 'tmap', duration: 0, distance: 0, cost: null, status: 'error', errorMessage: 'T맵 오류' };
+    return { app: 'tmap', duration: 0, distance: 0, toll: 0, fuel: null, status: 'error', errorMessage: 'T맵 오류' };
   }
 }

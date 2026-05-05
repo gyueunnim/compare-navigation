@@ -9,9 +9,8 @@ interface RouteCardProps {
   onPress: () => void;
 }
 
-function formatCost(cost: number | null): string {
-  if (cost === null) return '무료';
-  return `₩${cost.toLocaleString('ko-KR')}`;
+function formatMoney(amount: number): string {
+  return `₩${amount.toLocaleString('ko-KR')}`;
 }
 
 function formatDuration(minutes: number): string {
@@ -39,6 +38,9 @@ export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardP
       </View>
     );
   }
+
+  const tollLabel = result.toll > 0 ? formatMoney(result.toll) : '무료';
+  const hasToll = result.toll > 0;
 
   return (
     <TouchableOpacity
@@ -70,10 +72,17 @@ export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardP
         </View>
         <View style={styles.divider} />
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{formatCost(result.cost)}</Text>
-          <Text style={styles.statLabel}>예상 비용</Text>
+          <Text style={[styles.statValue, hasToll && styles.tollValue]}>{tollLabel}</Text>
+          <Text style={styles.statLabel}>통행료</Text>
         </View>
       </View>
+
+      {result.fuel !== null && (
+        <View style={styles.fuelRow}>
+          <Text style={styles.fuelLabel}>유류비(추정)</Text>
+          <Text style={styles.fuelValue}>약 {formatMoney(result.fuel)}</Text>
+        </View>
+      )}
 
       <Text style={[styles.launchHint, { color: config.color }]}>
         길안내 시작 →
@@ -171,6 +180,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
   },
+  tollValue: {
+    color: '#D94F4F',
+  },
   statLabel: {
     fontSize: 11,
     color: '#888888',
@@ -179,6 +191,24 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: '#E0E0E0',
+  },
+  fuelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFBF0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  fuelLabel: {
+    fontSize: 12,
+    color: '#888888',
+  },
+  fuelValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B07A00',
   },
   launchHint: {
     fontSize: 13,
