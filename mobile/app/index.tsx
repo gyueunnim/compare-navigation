@@ -147,8 +147,27 @@ export default function SearchScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={styles.inner} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Text style={styles.title}>내비 비교</Text>
-          <Text style={styles.subtitle}>세 가지 길안내를 한눈에 비교하세요</Text>
+          <View style={styles.logoRow}>
+            <View style={styles.logoIcon}>
+              <Text style={styles.logoEmoji}>🧭</Text>
+            </View>
+            <Text style={styles.title}>네비모아</Text>
+          </View>
+          <Text style={styles.subtitle}>카카오 네이버 티맵을 한눈에!</Text>
+          <View style={styles.appBadges}>
+            <View style={[styles.appBadge, { borderColor: '#03C75A' }]}>
+              <View style={[styles.appDot, { backgroundColor: '#03C75A' }]} />
+              <Text style={[styles.appBadgeText, { color: '#03C75A' }]}>네이버</Text>
+            </View>
+            <View style={[styles.appBadge, { borderColor: '#E51937' }]}>
+              <View style={[styles.appDot, { backgroundColor: '#E51937' }]} />
+              <Text style={[styles.appBadgeText, { color: '#E51937' }]}>T맵</Text>
+            </View>
+            <View style={[styles.appBadge, { borderColor: '#D4AC00', backgroundColor: '#FAE10022' }]}>
+              <View style={[styles.appDot, { backgroundColor: '#D4AC00' }]} />
+              <Text style={[styles.appBadgeText, { color: '#9A7A00' }]}>카카오</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.form}>
@@ -275,9 +294,30 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F0F4FF' },
   inner: { flex: 1, paddingHorizontal: 20, paddingTop: 40, gap: 28 },
-  header: { gap: 6 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1E3A8A' },
-  subtitle: { fontSize: 15, color: '#64748B' },
+  header: { gap: 10 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoIcon: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: '#3B5BDB',
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#3B5BDB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  logoEmoji: { fontSize: 22 },
+  title: { fontSize: 30, fontWeight: '800', color: '#1E3A8A', letterSpacing: -0.5 },
+  subtitle: { fontSize: 16, color: '#64748B', fontWeight: '500' },
+  appBadges: { flexDirection: 'row', gap: 8, marginTop: 2 },
+  appBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1.5, borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: '#FFFFFF',
+  },
+  appDot: { width: 7, height: 7, borderRadius: 4 },
+  appBadgeText: { fontSize: 12, fontWeight: '700' },
   form: {
     gap: 8,
     backgroundColor: '#FFFFFF',
