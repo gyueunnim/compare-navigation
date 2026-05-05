@@ -148,10 +148,10 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, height: 36, backgroundColor: '#E2E8F0' },
   launchBtn: {
     marginHorizontal: 14, marginBottom: 14,
-    borderRadius: 12, paddingVertical: 12,
+    borderRadius: 12, paddingVertical: 16,
     alignItems: 'center', backgroundColor: '#3B5BDB',
   },
-  launchText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  launchText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
   // 에러
   errorHeader: {
     flexDirection: 'row', alignItems: 'center',
