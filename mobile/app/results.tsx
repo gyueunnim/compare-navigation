@@ -63,7 +63,7 @@ export default function ResultsScreen() {
     const start = { lat: response.origin.lat, lng: response.origin.lng };
     const end = { lat: response.destination.lat, lng: response.destination.lng };
     try {
-      await openNavigationApp(app, start, end);
+      await openNavigationApp(app, start, end, params.startAddr, params.endAddr);
     } catch {
       Alert.alert('오류', '앱을 열 수 없습니다.');
     }
