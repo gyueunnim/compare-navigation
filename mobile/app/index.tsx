@@ -146,8 +146,8 @@ export default function SearchScreen() {
             </View>
             <View>
               <Text style={styles.title}>
-                <Text style={styles.titleThin}>최적</Text>
-                <Text style={styles.titleBold}>경로</Text>
+                <Text style={styles.titleThin}>베스트</Text>
+                <Text style={styles.titleBold}>루트</Text>
               </Text>
               <Text style={styles.subtitle}>카카오 네이버 티맵을 한눈에!</Text>
             </View>
