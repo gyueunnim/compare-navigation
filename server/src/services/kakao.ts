@@ -18,7 +18,7 @@ export async function getKakaoRoute(start: Coordinate, end: Coordinate): Promise
 
     const route = res.data?.routes?.[0];
     if (!route || route.result_code !== 0) {
-      return { app: 'kakao', duration: 0, distance: 0, toll: 0, fuel: null, status: 'no_route' };
+      return { app: 'kakao', duration: 0, distance: 0, toll: 0, status: 'no_route' };
     }
 
     const summary = route.summary;
@@ -26,9 +26,9 @@ export async function getKakaoRoute(start: Coordinate, end: Coordinate): Promise
     const distance = parseFloat((summary.distance / 1000).toFixed(1));
     const toll = summary.fare?.toll ?? 0;
 
-    return { app: 'kakao', duration, distance, toll, fuel: null, status: 'success' };
+    return { app: 'kakao', duration, distance, toll, status: 'success' };
   } catch (err) {
     console.error('[kakao]', err);
-    return { app: 'kakao', duration: 0, distance: 0, toll: 0, fuel: null, status: 'error', errorMessage: '카카오맵 오류' };
+    return { app: 'kakao', duration: 0, distance: 0, toll: 0, status: 'error', errorMessage: '카카오맵 오류' };
   }
 }

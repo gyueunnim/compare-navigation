@@ -77,13 +77,6 @@ export function RouteCard({ result, isFastest, isCheapest, onPress }: RouteCardP
         </View>
       </View>
 
-      {result.fuel !== null && (
-        <View style={styles.fuelRow}>
-          <Text style={styles.fuelLabel}>유류비(추정)</Text>
-          <Text style={styles.fuelValue}>약 {formatMoney(result.fuel)}</Text>
-        </View>
-      )}
-
       <Text style={[styles.launchHint, { color: config.color }]}>
         길안내 시작 →
       </Text>
@@ -191,24 +184,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: '#E0E0E0',
-  },
-  fuelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFBF0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  fuelLabel: {
-    fontSize: 12,
-    color: '#888888',
-  },
-  fuelValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#B07A00',
   },
   launchHint: {
     fontSize: 13,

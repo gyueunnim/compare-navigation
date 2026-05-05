@@ -18,22 +18,21 @@ export async function getNaverRoute(start: Coordinate, end: Coordinate): Promise
 
     const data = res.data;
     if (data.code !== 0) {
-      return { app: 'naver', duration: 0, distance: 0, toll: 0, fuel: null, status: 'no_route' };
+      return { app: 'naver', duration: 0, distance: 0, toll: 0, status: 'no_route' };
     }
 
     const summary = data.route?.trafast?.[0]?.summary;
     if (!summary) {
-      return { app: 'naver', duration: 0, distance: 0, toll: 0, fuel: null, status: 'no_route' };
+      return { app: 'naver', duration: 0, distance: 0, toll: 0, status: 'no_route' };
     }
 
     const duration = Math.ceil(summary.duration / 60000);
     const distance = parseFloat((summary.distance / 1000).toFixed(1));
     const toll = summary.tollFare ?? 0;
-    const fuel = (summary.fuelPrice ?? 0) > 0 ? summary.fuelPrice : null;
 
-    return { app: 'naver', duration, distance, toll, fuel, status: 'success' };
+    return { app: 'naver', duration, distance, toll, status: 'success' };
   } catch (err) {
     console.error('[naver]', err);
-    return { app: 'naver', duration: 0, distance: 0, toll: 0, fuel: null, status: 'error', errorMessage: '네이버 지도 오류' };
+    return { app: 'naver', duration: 0, distance: 0, toll: 0, status: 'error', errorMessage: '네이버 지도 오류' };
   }
 }
