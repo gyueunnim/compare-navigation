@@ -3,8 +3,10 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -134,9 +136,10 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
         style={styles.inner}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* 헤더 */}
         <View style={styles.header}>
@@ -277,6 +280,7 @@ export default function SearchScreen() {
           각 서비스의 경로 계산 방식에 따라 실제 결과는 차이가 있을 수 있습니다.
         </Text>
       </KeyboardAvoidingView>
+      </Pressable>
     </SafeAreaView>
   );
 }

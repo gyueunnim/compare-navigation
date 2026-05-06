@@ -4,9 +4,10 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import * as Location from 'expo-location';
 import { LoadingCard } from '../components/LoadingCard';
 import { RouteCard } from '../components/RouteCard';
@@ -165,13 +167,19 @@ export default function ResultsScreen() {
   const fastestApp = (() => {
     if (!response) return null;
     const s = response.results.filter((r) => r.status === 'success' && enabledApps.has(r.app));
-    return s.reduce<RouteResult | null>((m, r) => (!m || r.duration < m.duration ? r : m), null)?.app ?? null;
+    if (s.length < 2) return null;
+    const min = Math.min(...s.map((r) => r.duration));
+    const winners = s.filter((r) => r.duration === min);
+    return winners.length === 1 ? winners[0].app : null;
   })();
 
   const cheapestApp = (() => {
     if (!response) return null;
     const s = response.results.filter((r) => r.status === 'success' && r.toll > 0 && enabledApps.has(r.app));
-    return s.reduce<RouteResult | null>((m, r) => (!m || r.toll < m.toll ? r : m), null)?.app ?? null;
+    if (s.length < 2) return null;
+    const min = Math.min(...s.map((r) => r.toll));
+    const winners = s.filter((r) => r.toll === min);
+    return winners.length === 1 ? winners[0].app : null;
   })();
 
   async function handleCardPress(app: AppType) {
@@ -250,35 +258,33 @@ export default function ResultsScreen() {
       {/* 출발지·도착지 편집 모달 */}
       <Modal
         visible={editMode !== null}
-        animationType="slide"
+        animationType="fade"
         transparent
         onRequestClose={() => setEditMode(null)}
       >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.modalSheet}>
+        <Pressable style={styles.modalBackdrop} onPress={() => { Keyboard.dismiss(); setEditMode(null); }} />
+        <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {editMode === 'origin' ? '출발지 변경' : '도착지 변경'}
               </Text>
-              <TouchableOpacity onPress={() => setEditMode(null)} style={styles.modalCloseBtn}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
+              <View style={styles.modalHeaderRight}>
+                <TouchableOpacity
+                  style={styles.locationBtn}
+                  onPress={handleCurrentLocation}
+                  disabled={isLocating}
+                >
+                  {isLocating ? (
+                    <ActivityIndicator size="small" color="#3B5BDB" />
+                  ) : (
+                    <Text style={styles.locationBtnText}>📍 현재 위치</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setEditMode(null)} style={styles.modalCloseBtn}>
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            <TouchableOpacity
-              style={styles.locationBtn}
-              onPress={handleCurrentLocation}
-              disabled={isLocating}
-            >
-              {isLocating ? (
-                <ActivityIndicator size="small" color="#555" />
-              ) : (
-                <Text style={styles.locationBtnText}>📍 현재 위치로 설정</Text>
-              )}
-            </TouchableOpacity>
 
             <TextInput
               style={styles.modalInput}
@@ -286,7 +292,6 @@ export default function ResultsScreen() {
               onChangeText={handleEditTextChange}
               placeholder={editMode === 'origin' ? '출발지 주소 또는 장소명' : '도착지 주소 또는 장소명'}
               placeholderTextColor="#AAAAAA"
-              autoFocus
               returnKeyType="search"
               clearButtonMode="while-editing"
             />
@@ -322,8 +327,7 @@ export default function ResultsScreen() {
             {!isEditSearching && editText.trim().length >= 2 && editCandidates.length === 0 && (
               <Text style={styles.modalEmpty}>검색 결과가 없습니다.</Text>
             )}
-          </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -361,16 +365,22 @@ const styles = StyleSheet.create({
   errorText: { color: '#B91C1C', fontSize: 14, textAlign: 'center', lineHeight: 20 },
   disclaimer: { fontSize: 11, color: '#94A3B8', textAlign: 'center', lineHeight: 16, marginTop: 8, paddingHorizontal: 8 },
   // 편집 모달
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(30,58,138,0.25)' },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(30,58,138,0.4)',
+  },
   modalSheet: {
+    position: 'absolute',
+    top: '12%',
+    left: 16, right: 16,
+    maxHeight: '76%',
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: 20, paddingBottom: 36, paddingTop: 20,
-    minHeight: '55%',
-    maxHeight: '85%',
+    borderRadius: 24,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 24,
   },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
+  modalHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   modalCloseBtn: { padding: 4 },
   modalCloseText: { fontSize: 16, color: '#64748B' },
   modalInput: {
@@ -386,10 +396,11 @@ const styles = StyleSheet.create({
   modalItemText: { fontSize: 14, color: '#1E293B' },
   modalEmpty: { marginTop: 24, textAlign: 'center', fontSize: 14, color: '#94A3B8' },
   locationBtn: {
-    height: 46, borderRadius: 12,
-    borderWidth: 1.5, borderColor: '#C7D7FD',
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: 10, borderWidth: 1.5, borderColor: '#C7D7FD',
     backgroundColor: '#EEF2FF',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+    justifyContent: 'center', alignItems: 'center',
+    minWidth: 90,
   },
-  locationBtnText: { fontSize: 14, fontWeight: '700', color: '#3B5BDB' },
+  locationBtnText: { fontSize: 13, fontWeight: '700', color: '#3B5BDB' },
 });
