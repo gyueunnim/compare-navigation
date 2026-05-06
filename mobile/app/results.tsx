@@ -6,7 +6,6 @@ import {
   FlatList,
   Keyboard,
   Modal,
-  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -22,7 +21,7 @@ import { LoadingCard } from '../components/LoadingCard';
 import { RouteCard } from '../components/RouteCard';
 import { openNavigationApp } from '../services/deeplink';
 import { geocodeAddress } from '../services/api';
-import { AppType, GeocodeResult, RouteResult } from '../types';
+import { AppType, GeocodeResult } from '../types';
 import { useRouteSearch } from '../hooks/useRouteSearch';
 
 export default function ResultsScreen() {
