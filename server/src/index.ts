@@ -4,11 +4,20 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import geocodeRouter from './routes/geocode';
 import directionsRouter from './routes/directions';
+import { requireApiKey } from './middleware/auth';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) ?? [];
+app.use(cors({
+  origin: (origin, callback) => {
+    // 모바일 앱은 origin이 없으므로 허용
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('CORS 정책에 의해 차단되었습니다.'));
+  },
+}));
 app.use(express.json());
 
 app.use(
@@ -21,6 +30,7 @@ app.use(
 );
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.use('/api', requireApiKey);
 app.use('/api/geocode', geocodeRouter);
 app.use('/api/directions', directionsRouter);
 

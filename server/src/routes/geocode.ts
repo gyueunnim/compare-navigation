@@ -11,6 +11,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  if (query.length > 100) {
+    res.status(400).json({ error: '검색어는 100자 이내로 입력해주세요.' });
+    return;
+  }
+
   try {
     const results = await geocode(query);
     if (results.length === 0) {
