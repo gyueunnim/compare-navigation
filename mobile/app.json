@@ -34,9 +34,6 @@
     "plugins": [
       "expo-router",
       "expo-location"
-    ],
-    "extra": {
-      "apiUrl": "http://172.30.1.60:3000"
-    }
+    ]
   }
 }
