@@ -9,6 +9,8 @@ import { requireApiKey } from './middleware/auth';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) ?? [];
 app.use(cors({
   origin: (origin, callback) => {
